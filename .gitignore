@@ -1,0 +1,11 @@
+# Generated files
+/target/
+/debug/
+
+.vscode
+
+# Si molesta mucho agregar el Cargo.lock pero dudo :v
+
+**/*.rs.bk
+
+*.pdb
