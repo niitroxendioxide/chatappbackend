@@ -38,7 +38,9 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
 }
 
 async fn handle_connection(tcp_stream: tokio::net::TcpStream) -> Result<(), Box<dyn error::Error>> {
-    let callback = |req: &Request, response: Response| {
+
+    // la variable _req es porq el linter me ponia q no la usaba entonces la silencie :v
+    let callback = |_req: &Request, response: Response| {
         Ok(response)
     };
 
@@ -54,10 +56,16 @@ async fn handle_connection(tcp_stream: tokio::net::TcpStream) -> Result<(), Box<
             "payload": {
                 "key":user_id,
                 "status":"success",
-            }
+                "content":"",
+            },
+            "timestamp":chrono::Utc::now().to_rfc3339(),
         });
 
         user.send(json_message(response)).await?;
+
+        if let Err(error_msg) = messagehandler::handler::send_history_to_user(&user).await {
+            println!("Error sincronizando mensajes al usuario {}, Error: {}", user_id, error_msg)
+        };
 
         println!("[MAIN]: Connection established, new user: {}", user_id);
     } else {
