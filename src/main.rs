@@ -23,7 +23,7 @@ use uniqueid::IdGenerator;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn error::Error>> {
-    let listener = TcpListener::bind("127.0.0.1:8080").await?;
+    let listener = TcpListener::bind("localhost:8080").await?;
     println!("WebSocket server listening on ws://localhost:8080");
 
     while let Ok((tcp_stream, _)) = listener.accept().await {

@@ -3,7 +3,6 @@ use std::sync::{OnceLock, Mutex};
 use serde::Serialize;
 use std::error::Error;
 
-
 use crate::{usermanager::UserManager, connections::UserConnection, utils::{json_message, ClientMessage}};
 
 
@@ -93,6 +92,37 @@ pub async fn send_history_to_user(user: &UserConnection) -> Result<(), Box<dyn E
         // Small delay to prevent flooding (adjust as needed)
         tokio::time::sleep(std::time::Duration::from_millis(10)).await;
     }
+
+    let all_users = UserManager::get_users().lock().await;
+    for other_user in all_users.values() {
+        if other_user.id == user.id {continue;}
+
+        let sync_old_user_message = json_message(serde_json::json!({
+            "action":"user_add",
+            "payload":{
+                "content":other_user.id,
+            },
+            "timestamp":chrono::Utc::now().to_rfc3339(),
+        }));
+        
+        if let Err(e) = user.send(sync_old_user_message).await {
+            println!("Error sending message to user {}. {}", user.id, e);
+        }
+
+        //
+        let new_user_added = json_message(serde_json::json!({
+            "action":"user_add",
+            "payload":{
+                "content":user.id,
+            },
+            "timestamp":chrono::Utc::now().to_rfc3339(),
+        }));
+
+        if let Err(e) = other_user.send(new_user_added).await {
+            println!("Error sending message to user {}. {}", other_user.id, e);
+        }
+    }    
+    
 
     Ok(())
 }

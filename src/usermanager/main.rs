@@ -3,14 +3,15 @@ use std::collections::HashMap;
 use std::sync::OnceLock;
 use tokio::sync::Mutex;
 use tokio_tungstenite::tungstenite::Message;
-use crate::connections::UserConnection; // Import from parent module
+use crate::connections::UserConnection;
+use crate::utils::json_message;
 
 static USERS: OnceLock<Mutex<HashMap<usize, UserConnection>>> = OnceLock::new();
 
 pub struct UserManager;
 
 impl UserManager {
-    fn get_users() -> &'static Mutex<HashMap<usize, UserConnection>> {
+    pub fn get_users() -> &'static Mutex<HashMap<usize, UserConnection>> {
         USERS.get_or_init(|| Mutex::new(HashMap::new()))
     }
 
@@ -28,7 +29,21 @@ impl UserManager {
         let users = Self::get_users();
         users.lock().await.remove(&user_id);
 
-        println!("[USERMANAGER]: User id:[{}] disconnected", user_id)
+        println!("[USERMANAGER]: User id:[{}] disconnected", user_id);
+
+        for user in users.lock().await.values() {
+            let disconnection_message = json_message(serde_json::json!({
+                "action":"user_remove",
+                "payload":{
+                    "content":user_id,
+                },
+                "timestamp":chrono::Utc::now().to_rfc3339(),
+            }));
+            
+            if let Err(e) = user.send(disconnection_message).await {
+                println!("Error sending message to user {}. {}", user.id, e);
+            }
+        }
     }
 
     pub async fn broadcast(message: Message) -> Result<(), Box<dyn std::error::Error>> {
