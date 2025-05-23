@@ -15,16 +15,22 @@ mod uniqueid;
 use usermanager::UserManager;
 use utils::json_message;
 use uniqueid::IdGenerator;
+
+
 /**
+ * El protocolo utilizado es WebSocket, el cual permite enviar datos de manera bidireccional y full-duplex
+ * 
  * JSON es un lenguaje basado en texto para guardado de datos, así que las requests se pueden enviar como texto y ser JSON
  * Las funciones "Ok" y "Err" son wrappers que representan si está bien o mal el resultado del Error
  * Usar let Err() es como hacer una promise y catchear
 */
 
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn error::Error>> {
-    let listener = TcpListener::bind("localhost:8080").await?;
-    println!("WebSocket server listening on ws://localhost:8080");
+    let port = "0.0.0.0:8080";
+    let listener = TcpListener::bind(port).await?;
+    println!("WebSocket server listening on ws://{}", port);
 
     while let Ok((tcp_stream, _)) = listener.accept().await {
         tokio::spawn(async move {
