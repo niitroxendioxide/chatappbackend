@@ -33,12 +33,12 @@ pub async fn send_to_all(user: &str, event: &str) {
 
     let network_message = messages::pack_message(user, event);
 
-    let messages = MESSAGES.get_or_init(|| Mutex::new(Vec::new()));
-    messages.lock().unwrap().push(saved_message);
-
-    // Envia el mensaje, la parte de "Err" es como el "catch" de otros lenguajes
     if let Err(e) = UserManager::broadcast(network_message).await {
         eprintln!("Broadcast failed: {}", e);
+    } else {
+        // guarda mensaje en caso de no haber fallado el broadcast
+        let messages = MESSAGES.get_or_init(|| Mutex::new(Vec::new()));
+        messages.lock().unwrap().push(saved_message);
     }
 }
 

@@ -21,6 +21,13 @@ El archivo main.rs es compilado y luego corrido, a este se le cargan primero las
 
 El esquema para establecer modulos es similar a c++, pero en este caso se usan archivos de la misma extension y no un .header, ya que todos los archivos son 'modulos' de por si (en rust se usa el termino crates), cada modulo tiene su "mod.rs" que es su header estableciendo un modulo que se exporta y luego sus distintos archivos, que el programa puede cargar posteriormente, cada modulo puede tener cuantos archivos desee.
 
+### Sobre Rust
+
+Err = catch
+Ok = finally
+
+Definimos estructuras de datos diciendo strut {} y construimos la estructura :v
+
 ### Librerias
 
 Las librerias externas utilizadas fueron "tokio", "serde" y "chrono". 
