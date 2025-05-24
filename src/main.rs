@@ -16,7 +16,6 @@ use usermanager::UserManager;
 use utils::json_message;
 use uniqueid::IdGenerator;
 
-
 /**
  * El protocolo utilizado es WebSocket, el cual permite enviar datos de manera bidireccional y full-duplex
  * 
@@ -51,8 +50,11 @@ async fn handle_connection(tcp_stream: tokio::net::TcpStream) -> Result<(), Box<
     };
 
     let ws_stream = tokio_tungstenite::accept_hdr_async(tcp_stream, callback).await?;
-    let new_user = connections::UserConnection::new(IdGenerator::next(), ws_stream).await;
+    let (new_user, receiver) = connections::UserConnection::new(IdGenerator::next(), ws_stream).await;
     let user_id = new_user.id;
+
+    // (No necesito saber si el listener se escucha, ya que luego se borra en caso de que no pase)
+    new_user.listen(receiver).await;
 
     UserManager::add_user(new_user).await;
 

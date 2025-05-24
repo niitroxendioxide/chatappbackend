@@ -1,33 +1,11 @@
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{OnceLock, Mutex};
-use serde::Serialize;
+use std::sync::atomic::{Ordering};
+use std::sync::{Mutex};
 use std::error::Error;
 
+use super::messages;
+use super::shared::{MESSAGES, MESSAGE_COUNTER, UserMessage};
 use crate::{usermanager::UserManager, connections::UserConnection, utils::{json_message, ClientMessage}};
 
-
-/*
-* Mi linter detesta que uses camelCase para las estructuras o camelCase para las variables, acá se usa
-* snake_case para las variables y PascalCase para las estructuras/tipos/implementaciones de tipos
-*/
-#[derive(Debug, Clone, Serialize)]
-struct UserMessage {
-    key: usize,
-    user: String,
-    content: String,
-    timestamp: String,
-}
-
-/*
-* Contadores estáticos
-* Son "clases" (acá se llama structs, por que no es en base a objetos, sino a estructuras de datos)
-* En el caso de AtomicUsize es un integer de tamaño indefinido y unsigned (sin positivo-negativo, solo natural) & es un contador atómico
-* o sea que no puede ser interrumpido y va a ser correcto
-* En el caso de messages necesitamos un lock que pertenece a un mutex (vimos esto en vigilante) y que se mutex controle un Vector
-* de estructura de datos "UserMessage"
-*/
-static MESSAGE_COUNTER: AtomicUsize = AtomicUsize::new(0);
-static MESSAGES: OnceLock<Mutex<Vec<UserMessage>>> = OnceLock::new();
 
 pub async fn handle_message(client_msg: &ClientMessage) {
     println!("[MESSAGEHANDLER]: Request received from User: {}, Action: {}", client_msg.user, client_msg.action);
@@ -53,16 +31,7 @@ pub async fn send_to_all(user: &str, event: &str) {
         timestamp: current_timestamp.clone(),
     };
 
-    let network_message = json_message(serde_json::json!({
-        "action": "message",
-        "payload": {
-            "user": user,
-            "content": event,
-            "key": count,
-            "status": "success"
-        },
-        "timestamp": current_timestamp,
-    }));
+    let network_message = messages::pack_message(user, event);
 
     let messages = MESSAGES.get_or_init(|| Mutex::new(Vec::new()));
     messages.lock().unwrap().push(saved_message);

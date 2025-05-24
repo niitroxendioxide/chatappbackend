@@ -49,18 +49,22 @@ let ws_stream = tokio_tungstenite::accept_hdr_async(tcp_stream, callback).await?
 Para manejar de mejor manera los usuarios, hicimos una estructura de datos UserConnection, que posee una id y un transmitter (ya que su receptor no es necesario mas que cuando se carga el thread de manejar el receive de mensajes). Esta estructura se implementa en su propio control de clases y se separan el transmisor del receptor
 
 ```rs
-let (splittransmitter, receiver) = stream.split();
-let transmitter = Arc::new(Mutex::new(splittransmitter));
+impl UserConnection {
+    pub async fn new(id: usize, stream: WebSocketStream<TcpStream>) {
+        let (transmitter, receiver) = stream.split();
 
-tokio::spawn(async move {
-    Self::handle_receive(receiver, id).await;
-});
+        return (
+            UserConnection {
+                id,
+                transmitter,
+            },
 
-UserConnection {
-    id,
-    transmitter,
+            receiver
+        )
+    }
 }
 ```
+
 
 ### Futuras optimizaciones
 
