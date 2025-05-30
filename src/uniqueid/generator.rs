@@ -8,9 +8,4 @@ impl IdGenerator {
     pub fn next() -> usize {
         COUNTER.fetch_add(1, Ordering::SeqCst)
     }
-
-    // no use for it yet
-    //pub fn current() -> usize {
-    //    COUNTER.load(Ordering::SeqCst)
-    //}
 }

@@ -51,12 +51,8 @@ impl UserConnection {
 
     async fn handle_receive(mut receiver: Receiver, user_id: usize) {
         while let Some(msg) = receiver.next().await {
-            println!("message received from client");
-
             match msg {
                 Ok(Message::Text(text)) => {
-                    println!("mensaje {}", text);
-
                     match serde_json::from_str::<ClientMessage>(&text) {
                         // SI el mensaje cumple con el tipo de JSON entonces entra al Ok
                         Ok(client_msg) => {

@@ -16,6 +16,7 @@ pub struct UserMessage {
     pub user: String,
     pub content: String,
     pub timestamp: String,
+    pub replying_to: usize,
 }
 
 pub static MESSAGE_COUNTER: AtomicUsize = AtomicUsize::new(0);

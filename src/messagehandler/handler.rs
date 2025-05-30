@@ -8,16 +8,25 @@ use crate::{usermanager::UserManager, connections::UserConnection, utils::{json_
 
 
 pub async fn handle_message(client_msg: &ClientMessage) {
-    println!("[MESSAGEHANDLER]: Request received from User: {}, Action: {}", client_msg.user, client_msg.action);
+    //println!("[MESSAGE HANDLER]: Request received from User: {}, Action: {}", client_msg.user, client_msg.action);
 
-    if let Some(message_content) = client_msg.data.get("message_content") {
-        println!("User {} said: {}", client_msg.user, message_content);
-
-        send_to_all(&client_msg.user, &message_content.to_string()).await;
+    if client_msg.action == "msgsend" {
+        if let Some(message_content) = client_msg.data.get("message_content") {
+            println!("[MESSAGE] User {}: {}", client_msg.user, message_content);
+    
+            if let Some(replying_to) = client_msg.data.get("replying_to") {
+                if let Some(id) = replying_to.as_u64() {
+                    send_to_all(&client_msg.user, &message_content.to_string(), id as usize).await;
+                } else {
+                    eprintln!("Error parsing message value: {:?}", replying_to);
+                }
+            }
+        }
     }
+
 }
 
-pub async fn send_to_all(user: &str, event: &str) {
+pub async fn send_to_all(user: &str, event: &str, replying_to: usize) {
     // Contador con la id del mensaje (suma uno)
     // "Ordering::Relaxed" significa que solo utiliza operaciones atómicas y ningun lio raro, o sea, solo suma 1 :v
     let count = MESSAGE_COUNTER.fetch_add(1, Ordering::Relaxed);
@@ -29,6 +38,7 @@ pub async fn send_to_all(user: &str, event: &str) {
         user: user.to_string(),
         content: event.to_string(),
         timestamp: current_timestamp.clone(),
+        replying_to: replying_to,
     };
 
     let network_message = messages::pack_message(user, event);
@@ -53,6 +63,7 @@ pub async fn send_history_to_user(user: &UserConnection) -> Result<(), Box<dyn E
                 "key": msg.key,
                 "user": msg.user,
                 "content": msg.content,
+                "replying_to": msg.replying_to,
             },
             "timestamp": msg.timestamp
         }));

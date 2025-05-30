@@ -13,7 +13,7 @@ mod usermanager;
 mod uniqueid;
 
 use usermanager::UserManager;
-use utils::json_message;
+use utils::{json_message, PORT};
 use uniqueid::IdGenerator;
 
 /**
@@ -27,9 +27,8 @@ use uniqueid::IdGenerator;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn error::Error>> {
-    let port = "0.0.0.0:8080";
-    let listener = TcpListener::bind(port).await?;
-    println!("WebSocket server listening on ws://{}", port);
+    let listener = TcpListener::bind(PORT).await?;
+    println!("WebSocket server listening on ws://{}", PORT);
 
     while let Ok((tcp_stream, _)) = listener.accept().await {
         tokio::spawn(async move {
@@ -84,61 +83,3 @@ async fn handle_connection(tcp_stream: tokio::net::TcpStream) -> Result<(), Box<
 
     Ok(())
 }
-
-/*
-async fn old_connection(tcp_stream: tokio::net::TcpStream) -> Result<(), Box<dyn error::Error>> {
-    let callback = |req: &Request, response: Response| {
-        println!("Received handshake request: {:?}", req.headers());
-        Ok(response)
-    };
-
-    let ws_stream = tokio_tungstenite::accept_hdr_async(tcp_stream, callback).await?;
-    let (mut tx, mut rx) = ws_stream.split();
-
-    while let Some(msg) = rx.next().await {
-        match msg {
-            Ok(Message::Text(text)) => {
-                // Entra si recibe un mensaje de tipo texto (JSON es texto)
-                println!("Received message: {}", text.to_string());
-
-                match serde_json::from_str::<ClientMessage>(&text) {
-                    // SI el mensaje cumple con el tipo de JSON entonces entra al Ok
-                    Ok(client_msg) => {
-                        messagehandler::handle_message(&client_msg);
-
-                        let response = serde_json::json!({
-                            "status": "success",
-                            "received_action": client_msg.action
-                        });
-                        tx.send(Message::Text(response.to_string().into())).await?;
-                    }
-
-                    Err(e) => {
-                        eprintln!("JSON parse error: {}", e);
-
-
-                        tx.send(Message::Text(
-                            serde_json::json!({ "error": "Invalid JSON" }).to_string().into()
-                        )).await?;
-                    }
-                }
-            }
-
-            // Desconectarse
-            Ok(Message::Close(_)) => {
-                println!("Client disconnected");
-                break;
-            }
-
-            // En caso de error en el server
-            Err(e) => {
-                eprintln!("Receive error: {}", e);
-                break;
-            }
-            _ => {} // Otros tipos (case else basciamente)
-        }
-    }
-
-    Ok(())
-}
-*/

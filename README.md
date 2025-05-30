@@ -2,7 +2,7 @@
 
 Proyecto planteado como aplicación web que permite la comunicación a tiempo real en base al protocolo de red WebSockets, este es el back-end, o sea, quien recibe todos los mensajes y se encarga de hacer broadcast a los distintos clientes
 
-### Como Implementar:
+### Como Ejecutar:
 
 El programa se puede correr en cualquier sistema operativo, sea Linux, Windows 11 o macOs. primero clonar el repositorio y luego seguir los siguientes pasos
 
