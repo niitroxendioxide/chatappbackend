@@ -6,10 +6,10 @@ use chrono;
 
 use super::shared::MESSAGE_COUNTER;
 
-pub fn pack_message(user_id: &str, message_content: &str) -> Message {
+pub fn pack_message(msgtype: &str, user_id: &str, message_content: &str) -> Message {
     
     let network_message = json!({
-        "action": "message",
+        "action": msgtype,
         "payload": {
             "user": user_id,
             "content": message_content,

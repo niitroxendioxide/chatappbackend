@@ -4,6 +4,7 @@ use std::sync::OnceLock;
 use tokio::sync::Mutex;
 use tokio_tungstenite::tungstenite::Message;
 use crate::connections::UserConnection;
+use crate::messagehandler;
 use crate::utils::json_message;
 
 static USERS: OnceLock<Mutex<HashMap<usize, UserConnection>>> = OnceLock::new();

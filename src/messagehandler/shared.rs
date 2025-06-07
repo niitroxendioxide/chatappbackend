@@ -1,4 +1,4 @@
-use std::sync::{atomic::AtomicUsize, OnceLock, Mutex};
+use std::{collections::HashMap, iter::Map, sync::{atomic::AtomicUsize, Mutex, OnceLock}};
 use serde::Serialize;
 
 /*
@@ -21,3 +21,4 @@ pub struct UserMessage {
 
 pub static MESSAGE_COUNTER: AtomicUsize = AtomicUsize::new(0);
 pub static MESSAGES: OnceLock<Mutex<Vec<UserMessage>>> = OnceLock::new();
+pub static USER_MAP: OnceLock<Mutex<HashMap<usize, String>>> = OnceLock::new();

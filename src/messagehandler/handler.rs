@@ -1,9 +1,11 @@
+use std::collections::HashMap;
 use std::sync::atomic::{Ordering};
 use std::sync::{Mutex};
 use std::error::Error;
 
 use super::messages;
-use super::shared::{MESSAGES, MESSAGE_COUNTER, UserMessage};
+use super::usernames::get_user_map;
+use super::shared::{MESSAGES, MESSAGE_COUNTER, USER_MAP, UserMessage};
 use crate::{usermanager::UserManager, connections::UserConnection, utils::{json_message, ClientMessage}};
 
 
@@ -22,8 +24,33 @@ pub async fn handle_message(client_msg: &ClientMessage) {
                 }
             }
         }
+    } else if client_msg.action == "setuser" {
+        if let Some(new_username) = client_msg.data.get("message_content") {
+            println!("[USERNAME CHANGE] User {}: Name: {}", client_msg.user, new_username);
+            let network_message = messages::pack_message("set_username", &client_msg.user, &new_username.to_string());
+
+            if let Err(e) = UserManager::broadcast(network_message).await {
+                eprintln!("Broadcast failed: {}", e);
+            }
+        }
     }
 
+}
+
+
+pub async fn send_all_usernames(user: &UserConnection) {
+    let usernames = USER_MAP.get_or_init(|| Mutex::new(HashMap::from([])));
+    let locked_users = usernames.lock().unwrap();
+
+    for (id, name) in locked_users.iter() {
+        let idasstr = format!("{}", id);
+        let network_message = messages::pack_message("set_username", &idasstr, name);
+
+        if let Err(e) = user.send(network_message).await {
+            println!("Error sending username to user: {}", user.id);
+        };
+        tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+    }
 }
 
 pub async fn send_to_all(user: &str, event: &str, replying_to: usize) {
@@ -41,7 +68,7 @@ pub async fn send_to_all(user: &str, event: &str, replying_to: usize) {
         replying_to: replying_to,
     };
 
-    let network_message = messages::pack_message(user, event);
+    let network_message = messages::pack_message("message", user, event);
 
     if let Err(e) = UserManager::broadcast(network_message).await {
         eprintln!("Broadcast failed: {}", e);
@@ -69,7 +96,6 @@ pub async fn send_history_to_user(user: &UserConnection) -> Result<(), Box<dyn E
         }));
 
         user.send(message).await?;
-        // Small delay to prevent flooding (adjust as needed)
         tokio::time::sleep(std::time::Duration::from_millis(10)).await;
     }
 
