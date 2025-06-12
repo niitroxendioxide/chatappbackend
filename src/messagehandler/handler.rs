@@ -26,8 +26,24 @@ pub async fn handle_message(client_msg: &ClientMessage) {
         }
     } else if client_msg.action == "setuser" {
         if let Some(new_username) = client_msg.data.get("message_content") {
+            let username_str = new_username.to_string();
+
+            let user_id = match client_msg.user.parse::<usize>() {
+                Ok(id) => id,
+                Err(e) => {
+                    eprintln!("Invalid user ID format: {}", client_msg.user);
+                    return; // or handle the error as appropriate
+                }
+            };
+
+            {
+                let usernames = USER_MAP.get_or_init(|| Mutex::new(HashMap::new()));
+                let mut locked_users = usernames.lock().unwrap();
+                locked_users.insert(user_id, username_str.clone());
+            }
+
             println!("[USERNAME CHANGE] User {}: Name: {}", client_msg.user, new_username);
-            let network_message = messages::pack_message("set_username", &client_msg.user, &new_username.to_string());
+            let network_message = messages::pack_message("set_username", &client_msg.user, &username_str);
 
             if let Err(e) = UserManager::broadcast(network_message).await {
                 eprintln!("Broadcast failed: {}", e);
@@ -38,19 +54,28 @@ pub async fn handle_message(client_msg: &ClientMessage) {
 }
 
 
-pub async fn send_all_usernames(user: &UserConnection) {
-    let usernames = USER_MAP.get_or_init(|| Mutex::new(HashMap::from([])));
-    let locked_users = usernames.lock().unwrap();
+pub async fn send_all_usernames(user: &UserConnection) -> Result<(), Box<dyn Error>> {
+    // Collect usernames into a Vec before entering async operations
+    let user_list: Vec<(usize, String)> = {
+        let usernames = USER_MAP.get_or_init(|| Mutex::new(HashMap::new()));
+        let locked_users = usernames.lock().unwrap();
+        locked_users.iter()
+            .map(|(id, name)| (*id, name.clone()))
+            .collect()
+    };
 
-    for (id, name) in locked_users.iter() {
-        let idasstr = format!("{}", id);
-        let network_message = messages::pack_message("set_username", &idasstr, name);
+    for (id, name) in user_list {
+        let id_str = format!("{}", id);
+        println!("{}", name);
+        let network_message = messages::pack_message("set_username", &id_str, &name);
 
         if let Err(e) = user.send(network_message).await {
             println!("Error sending username to user: {}", user.id);
         };
         tokio::time::sleep(std::time::Duration::from_millis(10)).await;
     }
+
+    Ok(())
 }
 
 pub async fn send_to_all(user: &str, event: &str, replying_to: usize) {

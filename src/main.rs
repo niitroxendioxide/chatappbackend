@@ -74,6 +74,11 @@ async fn handle_connection(tcp_stream: tokio::net::TcpStream) -> Result<(), Box<
             println!("Error sincronizando mensajes al usuario {}, Error: {}", user_id, error_msg)
         };
 
+        if let Err(error_msg) = messagehandler::handler::send_all_usernames(&user).await {
+            println!("Error sincronizando mensajes al usuario {}, Error: {}", user_id, error_msg)
+        };
+
+
         println!("[MAIN]: Connection established, new user: {}", user_id);
     } else {
         println!("[MAIN]: Connection failed after creating user: {}", user_id);
